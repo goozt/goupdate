@@ -26,17 +26,19 @@ jobs:
           RELEASE_VERSION: ${{ github.ref_name }}
         run: |
           BIN_NAME="goupdate"
-          [ "${{ matrix.goos }}" = "windows" ] && BIN_NAME="goupdate_${RELEASE_VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}.exe"
+          [ "${{ matrix.goos }}" = "windows" ] && BIN_NAME="goupdate.exe" 
           go build -v -o "$BIN_NAME" main.go
 
           mkdir -p dist
 
           if [ "${{ matrix.goos }}" = "windows" ]; then
-            mv "$BIN_NAME" dist/
+            # For Windows, rename the actual file for the release
+            FINAL_NAME="goupdate_${RELEASE_VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}.exe"
+            mv "$BIN_NAME" "dist/$FINAL_NAME"
           else
+            # For Unix, wrap the 'goupdate' binary in a versioned tarball
             ARCHIVE_NAME="goupdate_${RELEASE_VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz"
-            tar -czf "$ARCHIVE_NAME" "$BIN_NAME"
-            mv "$ARCHIVE_NAME" dist/
+            tar -czf "dist/$ARCHIVE_NAME" "$BIN_NAME"
           fi
 
       - name: Upload Artifact
