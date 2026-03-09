@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 )
 
 var (
@@ -130,6 +129,15 @@ func checkVersionAvailable(version string) error {
 	return nil
 }
 
+func dirExists(path string) bool {
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false
+	}
+	// Return true only if it exists AND is a directory
+	return info.IsDir()
+}
+
 func runInstallation(version string) error {
 
 	filePath := fmt.Sprintf(goSourcePathTemplate, getHomeDir(), version)
@@ -141,11 +149,13 @@ func runInstallation(version string) error {
 	}
 
 	// 2. Remove existing installation
-	fmt.Println("Removing old Go installation")
-	rmCmd := exec.Command("sudo", "rm", "-rf", "/usr/local/go")
-	if err := rmCmd.Run(); err != nil {
-		fmt.Printf("Failed to remove old directory: %v\n", err)
-		return fmt.Errorf("failed to remove old directory: %v", err)
+	if dirExists("/usr/local/go") {
+		fmt.Println("Removing old Go installation")
+		rmCmd := exec.Command("sudo", "rm", "-rf", "/usr/local/go")
+		if err := rmCmd.Run(); err != nil {
+			fmt.Printf("Failed to remove old directory: %v\n", err)
+			return fmt.Errorf("failed to remove old directory: %v", err)
+		}
 	}
 
 	// 3. Extract the new tarball
@@ -187,28 +197,32 @@ func main() {
 	}
 
 	if os.Args[1] == "clean" {
-		fmt.Println("Cleaning up downloaded Go versions")
-		files, err := os.ReadDir(filepath.Join(getHomeDir(), "go", "src"))
+		srcDir := filepath.Join(getHomeDir(), "go", "src")
+		files, err := os.ReadDir(srcDir)
 		if err != nil {
 			fmt.Printf("Failed to read directory: %v\n", err)
 			os.Exit(1)
 		}
-		cleaned_count := 0
+
+		cleanedCount := 0
 		for _, file := range files {
 			if strings.HasPrefix(file.Name(), "go") && strings.HasSuffix(file.Name(), ".linux-amd64.tar.gz") {
-				fmt.Printf("🟥 %s", file.Name())
-				filePath := filepath.Join(getHomeDir(), "go", "src", file.Name())
+				fmt.Printf("⌛ Cleaning: %s", file.Name())
+				filePath := filepath.Join(srcDir, file.Name())
 				if err := os.Remove(filePath); err != nil {
-					fmt.Printf("Failed to remove file %s: %v", file.Name(), err)
+					fmt.Printf("\r\033[2K❌ Failed to remove file %s: %v", file.Name(), err)
 				} else {
-					time.Sleep(time.Second * 1) // Sleep for a moment to show the progress
-					fmt.Printf("\033[2K\r✅ %s", file.Name())
-					cleaned_count++
+					fmt.Printf("\r\033[2K✅ Cleaned: %s", file.Name())
+					cleanedCount++
 				}
 				fmt.Printf("\n")
 			}
 		}
-		fmt.Printf("Cleaned up %d files\n", cleaned_count)
+		if cleanedCount == 0 {
+			fmt.Println("No files to clean")
+		} else {
+			fmt.Printf("Removed %d files\n", cleanedCount)
+		}
 		os.Exit(0)
 	}
 
