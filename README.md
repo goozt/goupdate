@@ -7,3 +7,18 @@
 ```
 go install github.com/goozt/goupdate@latest
 ```
+
+### Usage
+
+```
+goupdate 1.26    # Installs 1.26.1 as that is the latest version
+goupdate 1.25    # Installs 1.25.8 as 8 is the latest stable version for 1.25
+goupdate 1.25.1  # Installs the exact version 1.25.1
+
+goupdate clean   # Remove all the downloaded go archives
+goupdate version # Display the version of the goupdate
+```
+
+### License
+
+MIT
