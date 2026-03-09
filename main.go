@@ -13,6 +13,7 @@ import (
 )
 
 var (
+	goupdate_version     = "1.0.0"
 	goSourcePathTemplate = "%s/go/src/go%s.linux-amd64.tar.gz"
 )
 
@@ -194,6 +195,11 @@ func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("Version string missing. eg: update 1.26.1")
 		os.Exit(1)
+	}
+
+	if os.Args[1] == "version" {
+		fmt.Printf("goupdate version v%s\n\nSource: https://github.com/goozt/goupdate\nAuthor: Nikhil John\nLicense: MIT\n", goupdate_version)
+		os.Exit(0)
 	}
 
 	if os.Args[1] == "clean" {
