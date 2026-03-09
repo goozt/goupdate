@@ -8,6 +8,10 @@
 go install github.com/goozt/goupdate@latest
 ```
 
+#### Install manually
+
+If go is not installed, download binary from [Releases](https://github.com/goozt/goupdate/releases). It will install go if it is not installed before. Note: goupdate does not update any environment variables. So make sure PATH variable is set to right paths.
+
 ### Usage
 
 ```sh

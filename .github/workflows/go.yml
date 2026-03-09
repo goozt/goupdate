@@ -26,24 +26,33 @@ jobs:
           RELEASE_VERSION: ${{ github.ref_name }}
         run: |
           BIN_NAME="goupdate"
-          [ "${{ matrix.goos }}" = "windows" ] && BIN_NAME="goupdate.exe"
+          [ "${{ matrix.goos }}" = "windows" ] && BIN_NAME="goupdate_${RELEASE_VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}.exe"
           go build -v -o "$BIN_NAME" main.go
 
-          ARCHIVE_NAME="goupdate_${RELEASE_VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz"
-          tar -czf "$ARCHIVE_NAME" "$BIN_NAME"
           mkdir -p dist
-          mv "$ARCHIVE_NAME" dist/
+
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            mv "$BIN_NAME" dist/
+          else
+            ARCHIVE_NAME="goupdate_${RELEASE_VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz"
+            tar -czf "$ARCHIVE_NAME" "$BIN_NAME"
+            mv "$ARCHIVE_NAME" dist/
+          fi
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: binaries-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: dist/*.tar.gz
+          path: |
+            dist/*.tar.gz
+            dist/*.exe
 
   release:
     name: Create Release
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -55,7 +64,9 @@ jobs:
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: all-dist/*.tar.gz
+          files: |
+            all-dist/*.tar.gz
+            all-dist/*.exe
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
           draft: false
