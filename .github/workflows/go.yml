@@ -1,0 +1,60 @@
+name: Release Go Binaries
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: [amd64, arm64]
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+
+    - name: Build and Package
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+        # Get tag name (e.g., v1.0.0) from the release event
+        RELEASE_VERSION: ${{ github.ref_name }}
+      run: |
+        # Define binary name
+        BIN_NAME="goupdate"
+        if [ "${{ matrix.goos }}" = "windows" ]; then
+          BIN_NAME="goupdate.exe"
+        fi
+
+        # Build the binary
+        go build -v -o "$BIN_NAME" main.go
+
+        # Define the archive name as requested
+        ARCHIVE_NAME="goupdate_${RELEASE_VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz"
+
+        # Create the .tar.gz archive
+        tar -czf "$ARCHIVE_NAME" "$BIN_NAME"
+        
+        # Move it to a clean dir for uploading
+        mkdir -p dist
+        mv "$ARCHIVE_NAME" dist/
+
+    - name: Upload to Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: dist/*.tar.gz
+        tag_name: ${{ github.ref_name }}
+        name: Version ${{ github.ref_name }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
