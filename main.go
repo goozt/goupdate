@@ -1,6 +1,8 @@
 package main
 
 import (
+	"archive/zip"
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"go/build"
@@ -10,14 +12,47 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
 )
 
-var (
-	goupdate_version = "1.1.0"
-	isRoot           = os.Geteuid() == 0
-)
+var goupdate_version = "1.2.0"
+
+// isPrivileged returns true if running as root on Unix, or always true on Windows
+// (Windows does not use sudo; privilege is handled by UAC/elevated prompt).
+func isPrivileged() bool {
+	if runtime.GOOS == "windows" {
+		return true
+	}
+	return os.Geteuid() == 0
+}
+
+// getArch returns the architecture string as used in Go download filenames.
+// On Linux, "arm" is mapped to "armv6l".
+func getArch() string {
+	arch := runtime.GOARCH
+	if arch == "arm" && runtime.GOOS == "linux" {
+		return "armv6l"
+	}
+	return arch
+}
+
+// getArchiveExt returns the file extension for the Go archive on the current OS.
+func getArchiveExt() string {
+	if runtime.GOOS == "windows" {
+		return ".zip"
+	}
+	return ".tar.gz"
+}
+
+// getInstallDir returns the standard Go installation directory for the current OS.
+func getInstallDir() string {
+	if runtime.GOOS == "windows" {
+		return `C:\Go`
+	}
+	return "/usr/local/go"
+}
 
 type progressWriter struct {
 	Total      int64
@@ -35,14 +70,14 @@ func (pw *progressWriter) Write(p []byte) (int, error) {
 		bar := strings.Repeat("█", completed) + strings.Repeat("░", barLength-completed)
 
 		// \r returns the cursor to the start of the line to overwrite it
-		fmt.Printf("\rDownloading [%s] %.2f%% (%d/%d MB)",
+		fmt.Printf("\r⌛ Downloading [%s] %.2f%% (%d/%d MB)",
 			bar, percent, pw.Downloaded/1024/1024, pw.Total/1024/1024)
 	}
 	return n, nil
 }
 
 func getGoSourcePath() string {
-	if isRoot {
+	if isPrivileged() {
 		homeDir, _ := os.UserHomeDir()
 		return filepath.Join(homeDir, "go", "src")
 	}
@@ -50,7 +85,8 @@ func getGoSourcePath() string {
 }
 
 func generatePathForVersion(version string) string {
-	return fmt.Sprintf(getGoSourcePath()+"/go%s.linux-amd64.tar.gz", version)
+	filename := fmt.Sprintf("go%s.%s-%s%s", version, runtime.GOOS, getArch(), getArchiveExt())
+	return filepath.Join(getGoSourcePath(), filename)
 }
 
 func getLatestVersions(partialVersion string) (string, error) {
@@ -100,8 +136,8 @@ func checkVersionAvailable(version string) error {
 		return nil
 	}
 
-	fmt.Printf("🔴 Version go%s is not found\n", version)
-	url := fmt.Sprintf("https://golang.org/dl/go%s.linux-amd64.tar.gz", version)
+	fmt.Printf("🔴 Version go%s is not found", version)
+	url := fmt.Sprintf("https://golang.org/dl/go%s.%s-%s%s", version, runtime.GOOS, getArch(), getArchiveExt())
 	resp, err := http.Get(url)
 	if err != nil {
 		return fmt.Errorf("failed to fetch version: %v", err)
@@ -121,6 +157,7 @@ func checkVersionAvailable(version string) error {
 	}
 	defer out.Close()
 
+	fmt.Printf("\033[2K")
 	pw := &progressWriter{Total: resp.ContentLength}
 	_, err = io.Copy(io.MultiWriter(out, pw), resp.Body)
 	if err != nil {
@@ -143,18 +180,21 @@ func dirExists(path string) bool {
 }
 
 func uninstallGo() error {
-	if dirExists("/usr/local/go") {
+	installDir := getInstallDir()
+	if dirExists(installDir) {
 		fmt.Print("⌛ Uninstalling Go...")
-		var rmCmd *exec.Cmd
-		if isRoot {
-			rmCmd = exec.Command("rm", "-rf", "/usr/local/go")
-		} else {
-			rmCmd = exec.Command("sudo", "rm", "-rf", "/usr/local/go")
-			fmt.Print("\r\033[2K⌛ Uninstalling Go...")
-		}
-		if err := rmCmd.Run(); err != nil {
-			fmt.Printf("❌ Failed to remove old directory: %v\n", err)
-			return fmt.Errorf("failed to remove old directory: %v", err)
+		if err := os.RemoveAll(installDir); err != nil {
+			// On Unix non-root, fall back to sudo rm
+			if runtime.GOOS != "windows" && !isPrivileged() {
+				sudoCmd := exec.Command("sudo", "rm", "-rf", installDir)
+				if err2 := sudoCmd.Run(); err2 != nil {
+					fmt.Printf("❌ Failed to remove old directory: %v\n", err2)
+					return fmt.Errorf("failed to remove old directory: %v", err2)
+				}
+			} else {
+				fmt.Printf("❌ Failed to remove old directory: %v\n", err)
+				return fmt.Errorf("failed to remove old directory: %v", err)
+			}
 		}
 		fmt.Printf("\r\033[2K✅ Uninstalled Go\n")
 	} else {
@@ -163,8 +203,54 @@ func uninstallGo() error {
 	return nil
 }
 
-func runInstallation(version string) error {
+// extractZip extracts a .zip archive (used on Windows) into destParent directory.
+func extractZip(src, destParent string) error {
+	r, err := zip.OpenReader(src)
+	if err != nil {
+		return fmt.Errorf("failed to open zip: %v", err)
+	}
+	defer r.Close()
 
+	for _, f := range r.File {
+		destPath := filepath.Join(destParent, f.Name)
+
+		// Guard against zip slip
+		if !strings.HasPrefix(filepath.Clean(destPath)+string(os.PathSeparator),
+			filepath.Clean(destParent)+string(os.PathSeparator)) {
+			return fmt.Errorf("illegal file path in zip: %s", f.Name)
+		}
+
+		if f.FileInfo().IsDir() {
+			os.MkdirAll(destPath, f.Mode())
+			continue
+		}
+
+		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+			return err
+		}
+
+		outFile, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+		if err != nil {
+			return err
+		}
+
+		rc, err := f.Open()
+		if err != nil {
+			outFile.Close()
+			return err
+		}
+
+		_, err = io.Copy(outFile, rc)
+		rc.Close()
+		outFile.Close()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func runInstallation(version string) error {
 	filePath := generatePathForVersion(version)
 
 	// 1. Check if version exists
@@ -174,27 +260,38 @@ func runInstallation(version string) error {
 	}
 
 	// 2. Remove existing installation
-	err := uninstallGo()
-	if err != nil {
+	if err := uninstallGo(); err != nil {
 		fmt.Printf("❌ Failed to uninstall old Go version: %v\n", err)
 		return fmt.Errorf("failed to uninstall old Go version: %v", err)
 	}
 
-	// 3. Extract the new tarball
+	// 3. Extract the new archive
 	fmt.Printf("⌛ Installing go%s", version)
-	var tarCmd *exec.Cmd
-	if isRoot {
-		tarCmd = exec.Command("tar", "-C", "/usr/local", "-xzf", filePath)
+	installParent := filepath.Dir(getInstallDir())
+
+	var extractErr error
+	if runtime.GOOS == "windows" {
+		extractErr = extractZip(filePath, installParent)
 	} else {
-		tarCmd = exec.Command("sudo", "tar", "-C", "/usr/local", "-xzf", filePath)
+		var tarCmd *exec.Cmd
+		if isPrivileged() {
+			tarCmd = exec.Command("tar", "-C", installParent, "-xzf", filePath)
+		} else {
+			tarCmd = exec.Command("sudo", "tar", "-C", installParent, "-xzf", filePath)
+		}
+		extractErr = tarCmd.Run()
 	}
-	if err := tarCmd.Run(); err != nil {
-		fmt.Printf("❌ Failed to extract tarball: %v\n", err)
-		return fmt.Errorf("failed to extract tarball: %v", err)
+	if extractErr != nil {
+		fmt.Printf("❌ Failed to extract archive: %v\n", extractErr)
+		return fmt.Errorf("failed to extract archive: %v", extractErr)
 	}
 
 	// 4. Verify the version
-	out, err := exec.Command("/usr/local/go/bin/go", "version").Output()
+	goBin := filepath.Join(getInstallDir(), "bin", "go")
+	if runtime.GOOS == "windows" {
+		goBin += ".exe"
+	}
+	out, err := exec.Command(goBin, "version").Output()
 	if err != nil {
 		fmt.Printf("❌ Error checking version: %v\n", err)
 		return fmt.Errorf("failed to check version: %v", err)
@@ -216,6 +313,107 @@ func runInstallation(version string) error {
 	return nil
 }
 
+// addToUnixShellConfigs appends PATH export lines to detected shell config files.
+func addToUnixShellConfigs(paths []string) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return
+	}
+
+	exportLines := []string{"", "# Added by goupdate"}
+	for _, p := range paths {
+		exportLines = append(exportLines, fmt.Sprintf("export PATH=$PATH:%s", p))
+	}
+	block := strings.Join(exportLines, "\n") + "\n"
+
+	candidates := []string{
+		filepath.Join(homeDir, ".bashrc"),
+		filepath.Join(homeDir, ".zshrc"),
+		filepath.Join(homeDir, ".profile"),
+	}
+
+	for _, cfg := range candidates {
+		if _, err := os.Stat(cfg); os.IsNotExist(err) {
+			continue
+		}
+		// Check if already present to avoid duplicates
+		f, err := os.Open(cfg)
+		if err != nil {
+			continue
+		}
+		alreadyPresent := false
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			line := scanner.Text()
+			for _, p := range paths {
+				if strings.Contains(line, p) {
+					alreadyPresent = true
+					break
+				}
+			}
+			if alreadyPresent {
+				break
+			}
+		}
+		f.Close()
+
+		if alreadyPresent {
+			continue
+		}
+
+		file, err := os.OpenFile(cfg, os.O_APPEND|os.O_WRONLY, 0644)
+		if err != nil {
+			continue
+		}
+		file.WriteString(block)
+		file.Close()
+		fmt.Printf("✅ Updated PATH in %s\n", cfg)
+	}
+}
+
+// addToWindowsUserPATH appends paths to the user-level PATH via PowerShell.
+func addToWindowsUserPATH(paths []string) {
+	for _, p := range paths {
+		script := fmt.Sprintf(
+			`$old = [Environment]::GetEnvironmentVariable('Path','User'); `+
+				`if ($old -notlike '*%s*') { `+
+				`[Environment]::SetEnvironmentVariable('Path', $old+';%s', 'User') }`,
+			p, p,
+		)
+		cmd := exec.Command("powershell", "-NoProfile", "-Command", script)
+		if err := cmd.Run(); err != nil {
+			fmt.Printf("⚠️  Could not update PATH for %s: %v\n", p, err)
+		} else {
+			fmt.Printf("✅ Added %s to user PATH\n", p)
+		}
+	}
+}
+
+// ensurePATH checks whether Go bin dirs are in PATH and adds them if missing.
+func ensurePATH() {
+	installBin := filepath.Join(getInstallDir(), "bin")
+	gopathBin := filepath.Join(build.Default.GOPATH, "bin")
+	currentPath := os.Getenv("PATH")
+
+	var missing []string
+	for _, p := range []string{installBin, gopathBin} {
+		if !strings.Contains(currentPath, p) {
+			missing = append(missing, p)
+		}
+	}
+	if len(missing) == 0 {
+		return
+	}
+
+	fmt.Println("⚠️  Some Go paths are not in your PATH. Adding them now...")
+	if runtime.GOOS == "windows" {
+		addToWindowsUserPATH(missing)
+	} else {
+		addToUnixShellConfigs(missing)
+	}
+	fmt.Println("   Restart your shell or source your config file to apply.")
+}
+
 func showVersion() {
 	fmt.Printf("goupdate version v%s\n\nSource: https://github.com/goozt/goupdate\nAuthor: Nikhil John\nLicense: MIT\n", goupdate_version)
 }
@@ -224,8 +422,8 @@ func showHelp() {
 	fmt.Println("Usage: goupdate <command>|<version>")
 	fmt.Println("\nCommands:")
 	fmt.Println("  version     Show goupdate tool version")
-	fmt.Println("  clean       Remove all downloaded Go tarballs from source path")
-	fmt.Println("  uninstall   Remove the Go installation from /usr/local/go")
+	fmt.Println("  clean       Remove all downloaded Go archives from source path")
+	fmt.Println("  uninstall   Remove the Go installation from", getInstallDir())
 	fmt.Println("  help        Show this help message")
 	fmt.Println("\nInstallation:")
 	fmt.Println("  <version>   Install a specific version (e.g., 1.25.1 or 1.26)")
@@ -244,9 +442,10 @@ func cleanup() {
 		os.Exit(1)
 	}
 
+	suffix := fmt.Sprintf(".%s-%s%s", runtime.GOOS, getArch(), getArchiveExt())
 	cleanedCount := 0
 	for _, file := range files {
-		if strings.HasPrefix(file.Name(), "go") && strings.HasSuffix(file.Name(), ".linux-amd64.tar.gz") {
+		if strings.HasPrefix(file.Name(), "go") && strings.HasSuffix(file.Name(), suffix) {
 			fmt.Printf("⌛ Cleaning: %s", file.Name())
 			filePath := filepath.Join(getGoSourcePath(), file.Name())
 			if err := os.Remove(filePath); err != nil {
@@ -267,12 +466,13 @@ func cleanup() {
 }
 
 func validateSudo() {
-	if !isRoot {
-		cmd := exec.Command("sudo", "-n", "true")
-		if err := cmd.Run(); err != nil {
-			cmd = exec.Command("sudo", "-v")
-			cmd.Run()
-		}
+	if runtime.GOOS == "windows" || isPrivileged() {
+		return
+	}
+	cmd := exec.Command("sudo", "-n", "true")
+	if err := cmd.Run(); err != nil {
+		cmd = exec.Command("sudo", "-v")
+		cmd.Run()
 	}
 }
 
@@ -318,6 +518,6 @@ func main() {
 		}
 
 		fmt.Printf("\r\033[2K✅ Successfully installed go%s\n", version)
+		ensurePATH()
 	}
-
 }

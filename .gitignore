@@ -32,3 +32,12 @@ go.work.sum
 # .vscode/
 
 bin/
+goupdate
+
+
+# Editor files
+.claude/
+.vscode/
+.idea/
+*.swp
+*.swo
