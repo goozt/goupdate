@@ -210,6 +210,7 @@ func uninstallGo(installedDir ...string) error {
 	} else {
 		installDir = getInstallDir()
 	}
+
 	if dirExists(installDir) {
 		fmt.Print("⌛ Uninstalling Go...")
 		if err := os.RemoveAll(installDir); err != nil {
@@ -372,7 +373,7 @@ func runInstallation(version string) error {
 		pw := &progressWriter{Label: "Installing"}
 		extractErr = extractTar(filePath, installParent, pw)
 	} else {
-		fmt.Printf("⌛ Installing (requires sudo)...")
+		fmt.Printf("⌛ Installing...")
 		tarCmd := exec.Command("sudo", "tar", "-C", installParent, "-xzf", filePath)
 		extractErr = tarCmd.Run()
 	}
@@ -589,7 +590,11 @@ func main() {
 		cleanup()
 	case "uninstall":
 		validateSudo()
-		uninstallGo(os.Args[1])
+		if len(os.Args) > 2 && strings.TrimSpace(os.Args[2]) != "" {
+			uninstallGo(os.Args[2])
+		} else {
+			uninstallGo()
+		}
 	case "help", "-h", "--help":
 		showHelp()
 	default:
