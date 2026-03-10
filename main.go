@@ -21,7 +21,6 @@ import (
 
 var goupdate_version = "1.2.0"
 
-// These variables are package-level so tests can override them with httptest servers.
 var goDevAPIURL = "https://go.dev/dl/?mode=json"
 var goDevDLBaseURL = "https://golang.org/dl"
 
@@ -34,7 +33,6 @@ func isPrivileged() bool {
 	return os.Geteuid() == 0
 }
 
-// getArch returns the architecture string as used in Go download filenames.
 // On Linux, "arm" is mapped to "armv6l".
 func getArch() string {
 	arch := runtime.GOARCH
@@ -44,7 +42,6 @@ func getArch() string {
 	return arch
 }
 
-// getArchiveExt returns the file extension for the Go archive on the current OS.
 func getArchiveExt() string {
 	if runtime.GOOS == "windows" {
 		return ".zip"
@@ -52,7 +49,6 @@ func getArchiveExt() string {
 	return ".tar.gz"
 }
 
-// getInstallDir returns the standard Go installation directory for the current OS.
 func getInstallDir() string {
 	if runtime.GOOS == "windows" {
 		return `C:\go`
@@ -81,7 +77,6 @@ func (pw *progressWriter) Write(p []byte) (int, error) {
 			bar = strings.Repeat("█", completed) + strings.Repeat("░", barLength-completed)
 		}
 
-		// \r returns the cursor to the start of the line to overwrite it
 		fmt.Printf("\r⌛ %s [%s] %.2f%% (%d/%d MB)",
 			pw.Label, bar, percent, pw.Written/1024/1024, pw.Total/1024/1024)
 	} else {
@@ -92,11 +87,8 @@ func (pw *progressWriter) Write(p []byte) (int, error) {
 }
 
 func getGoSourcePath() string {
-	// if isPrivileged() {
 	homeDir, _ := os.UserHomeDir()
 	return filepath.Join(homeDir, "go", "src")
-	// }
-	// return filepath.Join(build.Default.GOPATH, "src")
 }
 
 func generatePathForVersion(version string) string {
@@ -233,7 +225,6 @@ func uninstallGo(installedDir ...string) error {
 	return nil
 }
 
-// extractZip extracts a .zip archive (used on Windows) into destParent directory.
 func extractZip(src, destParent string, pw *progressWriter) error {
 	r, err := zip.OpenReader(src)
 	if err != nil {
@@ -287,7 +278,6 @@ func extractZip(src, destParent string, pw *progressWriter) error {
 	return nil
 }
 
-// extractTar extracts a .tar.gz archive (used on Unix) into destParent directory.
 func extractTar(src, destParent string, pw *progressWriter) error {
 	f, err := os.Open(src)
 	if err != nil {
@@ -411,7 +401,6 @@ func runInstallation(version string) error {
 	return nil
 }
 
-// addToUnixShellConfigs appends PATH export lines to detected shell config files.
 func addToUnixShellConfigs(paths []string) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -469,7 +458,6 @@ func addToUnixShellConfigs(paths []string) {
 	}
 }
 
-// addToWindowsUserPATH appends paths to the user-level PATH via PowerShell.
 func addToWindowsUserPATH(paths []string) {
 	for _, p := range paths {
 		script := fmt.Sprintf(
@@ -487,7 +475,6 @@ func addToWindowsUserPATH(paths []string) {
 	}
 }
 
-// ensurePATH checks whether Go bin dirs are in PATH and adds them if missing.
 func ensurePATH() {
 	installBin := filepath.Join(getInstallDir(), "bin")
 	gopathBin := filepath.Join(build.Default.GOPATH, "bin")
@@ -577,7 +564,6 @@ func validateSudo() {
 }
 
 func main() {
-	// 1. Check for command line argument
 	if len(os.Args) < 2 {
 		fmt.Println("❌ Version string missing. eg: update 1.26.1")
 		os.Exit(1)
