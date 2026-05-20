@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en" data-theme="light" data-density="regular">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>goupdate — install, update & switch Go versions from the CLI</title>
+  <meta name="description" content="Cross-platform CLI to install, update, and switch Go versions from official releases. Linux, macOS, and Windows." />
+  <meta name="darkreader-lock">
+  <link rel="stylesheet" href="colors_and_type.css" />
+  <link rel="stylesheet" href="page.css" />
+  <style>.os-panel[hidden]{display:none !important;}</style>
+</head>
+<body>
+  <div class="page" data-density="regular">
+    <header class="gh-header">
+      <a class="brand" href="#">
+        <span class="brand-mark" aria-hidden="true">&uarr;</span>
+        <span class="brand-wm">goupdate</span>
+        <span class="brand-ver">v1.4</span>
+      </a>
+      <nav class="gh-nav">
+        <a href="#features">Features</a>
+        <a href="#install">Install</a>
+        <a href="#commands">Commands</a>
+        <a href="https://github.com/goozt/goupdate" class="nav-gh" target="_blank" rel="noopener">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1.2-.8.1-.8.1-.8 1.3.1 2 1.3 2 1.3 1.2 2 3 1.4 3.8 1.1.1-.8.5-1.4.8-1.7-2.7-.3-5.5-1.3-5.5-6 0-1.3.5-2.4 1.3-3.2-.1-.3-.6-1.6.1-3.3 0 0 1-.3 3.3 1.2a11 11 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.7 1.7.2 3 .1 3.3.8.8 1.3 2 1.3 3.2 0 4.7-2.8 5.7-5.5 6 .5.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5z"/></svg>
+          GitHub
+        </a>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" title="Switch theme">
+          <svg class="ico-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+          <svg class="ico-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        </button>
+        <a href="#install" class="btn btn-primary btn-sm">Install</a>
+      </nav>
+    </header>
+
+    <main>
+      <!-- HERO -->
+      <section class="hero">
+        <div class="hero-copy">
+          <div class="eyebrow"><span class="eyebrow-dot"></span> Cross-platform Go version manager</div>
+          <h1 class="hero-h1">
+            Install, update, and switch <span class="hero-accent">Go</span> versions from your terminal.
+          </h1>
+          <p class="hero-sub">
+            One command, official releases, every platform. <strong>goupdate</strong> downloads
+            Go from go.dev, verifies it, and keeps your <code>PATH</code> tidy — even on a fresh machine.
+          </p>
+
+          <div class="code-line code-line-lg" data-copy="goupdate 1.26">
+            <span class="code-prompt">$</span>
+            <span class="code-text">goupdate <span class="tok-num">1.26</span></span>
+            <button class="code-copy" aria-label="Copy">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+              <span class="copy-lbl">Copy</span>
+            </button>
+          </div>
+
+          <div class="hero-ctas">
+            <a href="#install" class="btn btn-primary">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
+              Install goupdate
+            </a>
+            <a href="https://github.com/goozt/goupdate" target="_blank" rel="noopener" class="btn btn-secondary">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1.2-.8.1-.8.1-.8 1.3.1 2 1.3 2 1.3 1.2 2 3 1.4 3.8 1.1.1-.8.5-1.4.8-1.7-2.7-.3-5.5-1.3-5.5-6 0-1.3.5-2.4 1.3-3.2-.1-.3-.6-1.6.1-3.3 0 0 1-.3 3.3 1.2a11 11 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.7 1.7.2 3 .1 3.3.8.8 1.3 2 1.3 3.2 0 4.7-2.8 5.7-5.5 6 .5.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5z"/></svg>
+              View on GitHub
+              <svg class="btn-ar" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+          </div>
+
+          <ul class="hero-meta">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg> Official releases from <code>go.dev</code></li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg> Linux · macOS · Windows</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg> MIT licensed</li>
+          </ul>
+        </div>
+
+        <div class="hero-art">
+          <div class="term-card">
+            <div class="term-titlebar">
+              <span class="term-dot d-r"></span>
+              <span class="term-dot d-y"></span>
+              <span class="term-dot d-g"></span>
+              <span class="term-title">~ &nbsp;goupdate</span>
+            </div>
+            <div class="term-body">
+              <div class="line"><span class="prm">$</span> goupdate <span class="acc">1.26</span></div>
+              <div class="line dim">🟢  Searching go1.26.1 online</div>
+              <div class="line"><span class="acc">⌛</span>  Downloading <span class="bar">[████████████████████]</span> 100% <span class="dim">(165/165 MB)</span></div>
+              <div class="line ok">✅  Download completed</div>
+              <div class="line ok">✅  Removed previous go1.25.8</div>
+              <div class="line ok">✅  Installation completed</div>
+              <div class="line ok">✅  Successfully installed go1.26.1</div>
+              <div class="line"><span class="prm">$</span> go version</div>
+              <div class="line">go version <span class="acc">go1.26.1</span> linux/amd64</div>
+              <div class="line"><span class="prm">$</span> <span class="caret"></span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- INSTALL / OS TABS -->
+      <section class="section" id="install">
+        <div class="section-head">
+          <div class="eyebrow"><span class="eyebrow-dot"></span> Install</div>
+          <h2>Pick your platform.</h2>
+          <p class="section-lede">
+            One command everywhere. Use <code>go install</code> if you already have Go,
+            or grab a standalone binary from Releases.
+          </p>
+        </div>
+
+        <div class="os-card">
+          <div class="os-tabs" role="tablist">
+            <button role="tab" class="os-tab active" data-os="linux">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2c-3 2-3 4-3 7s-2 4-2 6 2 4 5 7c3-3 5-5 5-7s-2-3-2-6 0-5-3-7z"/></svg>
+              Linux
+            </button>
+            <button role="tab" class="os-tab" data-os="macos">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17 7c0-2 1.3-3.5 3-4-1.2 1.5-1.2 3-1 4zm-9 14c-3 0-5-3-5-7s3-7 5-7c1.5 0 2 1 4 1s2.5-1 4-1c2 0 4 1 5 4-3 1-3 6 0 7-1 3-3 4-5 4-1.5 0-2-1-4-1s-2.5 1-4 1z"/></svg>
+              macOS
+            </button>
+            <button role="tab" class="os-tab" data-os="windows">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5l8-1v8H3V5zm9-1l9-1v10h-9V4zM3 13h8v7l-8-1v-6zm9 0h9v9l-9-1v-8z"/></svg>
+              Windows
+            </button>
+          </div>
+
+          <!-- Linux panel -->
+          <div class="os-body os-panel" data-os="linux">
+            <div class="os-snippets">
+              <div class="os-snippet">
+                <div class="os-snippet-label">With Go already installed</div>
+                <div class="code-line" data-copy="go install github.com/goozt/goupdate@latest">
+                  <span class="code-prompt">$</span>
+                  <span class="code-text"><span class="tok-cmd">go</span> install github.com/goozt/goupdate@latest</span>
+                  <button class="code-copy" aria-label="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span class="copy-lbl">Copy</span></button>
+                </div>
+              </div>
+              <div class="os-snippet">
+                <div class="os-snippet-label">Fresh machine — download binary</div>
+                <div class="code-line" data-copy="curl -L https://github.com/goozt/goupdate/releases/latest -o goupdate">
+                  <span class="code-prompt">$</span>
+                  <span class="code-text"><span class="tok-cmd">curl</span> <span class="tok-flag">-L</span> <span class="tok-url">https://github.com/goozt/goupdate/releases/latest</span> <span class="tok-flag">-o</span> goupdate</span>
+                  <button class="code-copy" aria-label="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span class="copy-lbl">Copy</span></button>
+                </div>
+              </div>
+            </div>
+            <div class="os-notes">
+              <div class="os-notes-label">On Linux</div>
+              <ul>
+                <li><span class="bul-dot"></span><span class="bul-txt">Installs Go to <code>/usr/local/go</code> from <code>.tar.gz</code> archive.</span></li>
+                <li><span class="bul-dot"></span><span class="bul-txt">Appends <code>PATH</code> exports to <code>~/.bashrc</code>, <code>~/.zshrc</code>, and <code>~/.profile</code> (whichever exist).</span></li>
+                <li><span class="bul-dot"></span><span class="bul-txt">Prompts for <code>sudo</code> automatically — run as normal user.</span></li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- macOS panel -->
+          <div class="os-body os-panel" data-os="macos" hidden>
+            <div class="os-snippets">
+              <div class="os-snippet">
+                <div class="os-snippet-label">With Go already installed</div>
+                <div class="code-line" data-copy="go install github.com/goozt/goupdate@latest">
+                  <span class="code-prompt">$</span>
+                  <span class="code-text"><span class="tok-cmd">go</span> install github.com/goozt/goupdate@latest</span>
+                  <button class="code-copy" aria-label="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span class="copy-lbl">Copy</span></button>
+                </div>
+              </div>
+              <div class="os-snippet">
+                <div class="os-snippet-label">Fresh machine — download binary</div>
+                <div class="code-line" data-copy="curl -L https://github.com/goozt/goupdate/releases/latest -o goupdate">
+                  <span class="code-prompt">$</span>
+                  <span class="code-text"><span class="tok-cmd">curl</span> <span class="tok-flag">-L</span> <span class="tok-url">https://github.com/goozt/goupdate/releases/latest</span> <span class="tok-flag">-o</span> goupdate</span>
+                  <button class="code-copy" aria-label="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span class="copy-lbl">Copy</span></button>
+                </div>
+              </div>
+            </div>
+            <div class="os-notes">
+              <div class="os-notes-label">On macOS</div>
+              <ul>
+                <li><span class="bul-dot"></span><span class="bul-txt">Same install dir as Linux: <code>/usr/local/go</code>. Apple Silicon &amp; Intel.</span></li>
+                <li><span class="bul-dot"></span><span class="bul-txt">Updates the shell rc files used by Terminal &amp; iTerm.</span></li>
+                <li><span class="bul-dot"></span><span class="bul-txt">Prompts for admin password when needed.</span></li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Windows panel -->
+          <div class="os-body os-panel" data-os="windows" hidden>
+            <div class="os-snippets">
+              <div class="os-snippet">
+                <div class="os-snippet-label">With Go already installed</div>
+                <div class="code-line" data-copy="go install github.com/goozt/goupdate@latest">
+                  <span class="code-prompt">$</span>
+                  <span class="code-text"><span class="tok-cmd">go</span> install github.com/goozt/goupdate@latest</span>
+                  <button class="code-copy" aria-label="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span class="copy-lbl">Copy</span></button>
+                </div>
+              </div>
+              <div class="os-snippet">
+                <div class="os-snippet-label">Fresh machine — download binary</div>
+                <div class="code-line" data-copy="Invoke-WebRequest -Uri https://github.com/goozt/goupdate/releases/latest -OutFile goupdate.exe">
+                  <span class="code-prompt">$</span>
+                  <span class="code-text"><span class="tok-cmd">Invoke-WebRequest</span> <span class="tok-flag">-Uri</span> <span class="tok-url">https://github.com/goozt/goupdate/releases/latest</span> <span class="tok-flag">-OutFile</span> goupdate.exe</span>
+                  <button class="code-copy" aria-label="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span class="copy-lbl">Copy</span></button>
+                </div>
+              </div>
+            </div>
+            <div class="os-notes">
+              <div class="os-notes-label">On Windows</div>
+              <ul>
+                <li><span class="bul-dot"></span><span class="bul-txt">Installs Go to <code>C:\go</code> from a <code>.zip</code> archive.</span></li>
+                <li><span class="bul-dot"></span><span class="bul-txt">Updates the user-level <code>Path</code> via PowerShell — open a new terminal to apply.</span></li>
+                <li><span class="bul-dot"></span><span class="bul-txt"><strong>No admin rights needed.</strong> Works in any shell.</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FEATURES -->
+      <section class="section" id="features">
+        <div class="section-head">
+          <div class="eyebrow"><span class="eyebrow-dot"></span> Commands</div>
+          <h2>Five commands. One binary.</h2>
+          <p class="section-lede">
+            Every action is a verb you'd type anyway. No subcommand trees, no flags to memorize.
+          </p>
+        </div>
+
+        <div class="feat-grid">
+          <article class="feat">
+            <div class="feat-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg></div>
+            <h3 class="feat-title">Install</h3>
+            <p class="feat-desc">Pin to a major version and goupdate grabs the latest patch — or pin an exact version.</p>
+            <div class="feat-cmd"><span class="feat-cmd-prm">$</span> goupdate 1.26</div>
+          </article>
+          <article class="feat">
+            <div class="feat-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg></div>
+            <h3 class="feat-title">Update</h3>
+            <p class="feat-desc">Same command, run again. Replaces the existing installation with the newest patch release.</p>
+            <div class="feat-cmd"><span class="feat-cmd-prm">$</span> goupdate 1.26</div>
+          </article>
+          <article class="feat">
+            <div class="feat-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4L3 8l4 4"/><path d="M3 8h14a4 4 0 0 1 4 4"/><path d="M17 20l4-4-4-4"/><path d="M21 16H7a4 4 0 0 1-4-4"/></svg></div>
+            <h3 class="feat-title">Switch versions</h3>
+            <p class="feat-desc">Move between minor versions instantly. No version managers or shims to configure.</p>
+            <div class="feat-cmd"><span class="feat-cmd-prm">$</span> goupdate 1.25.1</div>
+          </article>
+          <article class="feat">
+            <div class="feat-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4l6 6"/><path d="M17 7l-9 9-4 4 4-1 9-9"/><path d="M9 19l-4-4"/></svg></div>
+            <h3 class="feat-title">Clean cache</h3>
+            <p class="feat-desc">Wipe downloaded archives once you're done. Frees disk space without touching your install.</p>
+            <div class="feat-cmd"><span class="feat-cmd-prm">$</span> goupdate clean</div>
+          </article>
+          <article class="feat">
+            <div class="feat-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></div>
+            <h3 class="feat-title">Uninstall Go</h3>
+            <p class="feat-desc">Remove the current Go installation cleanly — directory, binaries, and PATH entries.</p>
+            <div class="feat-cmd"><span class="feat-cmd-prm">$</span> goupdate uninstall</div>
+          </article>
+        </div>
+      </section>
+
+      <!-- CALLOUTS -->
+      <section class="section section-tight" id="commands">
+        <div class="section-head">
+          <div class="eyebrow"><span class="eyebrow-dot"></span> Before you install</div>
+          <h2>Two things to know.</h2>
+        </div>
+        <div class="callouts">
+          <div class="callout c-warn">
+            <div class="callout-ico" aria-hidden="true">!</div>
+            <div class="callout-body">
+              <div class="callout-ttl">goupdate edits your <code>PATH</code></div>
+              <div class="callout-txt">
+                <strong>Linux &amp; macOS</strong> — appends export lines to <code>~/.bashrc</code>, <code>~/.zshrc</code>, and <code>~/.profile</code>. Restart your shell or <code>source</code> the file to apply.
+                <br />
+                <strong>Windows</strong> — updates the user-level <code>Path</code> via PowerShell. Open a new terminal afterwards.
+              </div>
+            </div>
+          </div>
+          <div class="callout c-info">
+            <div class="callout-ico" aria-hidden="true">i</div>
+            <div class="callout-body">
+              <div class="callout-ttl">About <code>sudo</code> and privileges</div>
+              <div class="callout-txt">
+                On Linux &amp; macOS, goupdate writes to <code>/usr/local/go</code> and will prompt for <code>sudo</code> automatically — <strong>don't run <code>sudo goupdate</code></strong>, just <code>goupdate</code>. Windows writes to <code>C:\go</code> directly and never needs elevation.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="gh-footer">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <span class="brand-mark">&uarr;</span>
+          <span class="brand-wm">goupdate</span>
+          <span class="footer-tag">— a cross-platform Go version manager</span>
+        </div>
+        <nav class="footer-nav">
+          <a href="https://github.com/goozt/goupdate" target="_blank" rel="noopener">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1.2-.8.1-.8.1-.8 1.3.1 2 1.3 2 1.3 1.2 2 3 1.4 3.8 1.1.1-.8.5-1.4.8-1.7-2.7-.3-5.5-1.3-5.5-6 0-1.3.5-2.4 1.3-3.2-.1-.3-.6-1.6.1-3.3 0 0 1-.3 3.3 1.2a11 11 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.7 1.7.2 3 .1 3.3.8.8 1.3 2 1.3 3.2 0 4.7-2.8 5.7-5.5 6 .5.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5z"/></svg>
+            Repository
+          </a>
+          <a href="https://github.com/goozt/goupdate/releases" target="_blank" rel="noopener">Releases</a>
+          <a href="https://github.com/goozt/goupdate/blob/main/LICENSE" target="_blank" rel="noopener">License · MIT</a>
+        </nav>
+      </div>
+      <div class="footer-fine">
+        Not affiliated with the Go project. Distributes the same archives published at <code>go.dev/dl</code>.
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // Fetch latest release version from GitHub
+    fetch('https://api.github.com/repos/goozt/goupdate/releases/latest')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data || !data.tag_name) return;
+        const ver = data.tag_name.startsWith('v') ? data.tag_name : 'v' + data.tag_name;
+        document.querySelectorAll('.brand-ver').forEach(el => { el.textContent = ver; });
+      })
+      .catch(() => {});
+
+    // Theme toggle
+    const html = document.documentElement;
+    const themeBtn = document.getElementById('themeToggle');
+    const moon = themeBtn.querySelector('.ico-moon');
+    const sun = themeBtn.querySelector('.ico-sun');
+    function setTheme(dark) {
+      html.dataset.theme = dark ? 'dark' : 'light';
+      moon.style.display = dark ? 'none' : '';
+      sun.style.display = dark ? '' : 'none';
+      try { localStorage.setItem('goupdate-theme', dark ? 'dark' : 'light'); } catch (e) {}
+    }
+    try {
+      const saved = localStorage.getItem('goupdate-theme');
+      if (saved) setTheme(saved === 'dark');
+      else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) setTheme(true);
+    } catch (e) {}
+    themeBtn.addEventListener('click', () => setTheme(html.dataset.theme !== 'dark'));
+
+    // OS tabs
+    const tabs = document.querySelectorAll('.os-tab');
+    const panels = document.querySelectorAll('.os-panel');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const os = tab.dataset.os;
+        tabs.forEach(t => t.classList.toggle('active', t === tab));
+        panels.forEach(p => { p.hidden = p.dataset.os !== os; });
+      });
+    });
+
+    // Feature card command — click anywhere on it to copy
+    document.querySelectorAll('.feat-cmd').forEach(el => {
+      el.style.cursor = 'pointer';
+      el.title = 'Click to copy';
+      el.addEventListener('click', () => {
+        const prm = el.querySelector('.feat-cmd-prm');
+        const text = (el.innerText.replace(prm ? prm.innerText : '', '')).trim();
+        if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => {});
+        const original = el.innerHTML;
+        el.innerHTML = '<span class="feat-cmd-prm">$</span> Copied!';
+        setTimeout(() => { el.innerHTML = original; }, 1200);
+      });
+    });
+
+    // Copy buttons
+    document.querySelectorAll('.code-line').forEach(line => {
+      const btn = line.querySelector('.code-copy');
+      if (!btn) return;
+      btn.addEventListener('click', e => {
+        e.preventDefault();
+        const text = line.dataset.copy || line.querySelector('.code-text').innerText;
+        if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => {});
+        const lbl = btn.querySelector('.copy-lbl');
+        const prev = lbl.textContent;
+        lbl.textContent = 'Copied';
+        setTimeout(() => { lbl.textContent = prev; }, 1500);
+      });
+    });
+  </script>
+</body>
+</html>

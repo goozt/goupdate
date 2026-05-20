@@ -41,3 +41,4 @@ goupdate
 .idea/
 *.swp
 *.swo
+.design_tmp
